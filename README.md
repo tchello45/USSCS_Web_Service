@@ -13,4 +13,4 @@ Later USSCS_WS should provide a Docker Container for easy deployment.
 
 # In combination with:
 `encpp` - encryption library for Python [encpp](https://github.com/tchello45/encpp) 
-`USSCS` - Universal Serverside Chat System Version: 2.0.4 [USSCS](https://github.com/tchello45/USSCS/tree/Version-3.0.0)
+`USSCS` - Universal Serverside Chat System Version: 3.0.0 [USSCS](https://github.com/tchello45/USSCS/tree/Version-3.0.0)
