@@ -2,3 +2,5 @@
 /enc_db/
 /__pycache__/
 /DATABASE/
+/private_key.pem
+/public_key.pem

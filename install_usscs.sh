@@ -5,4 +5,6 @@ python3 setup.py install
 cd ..
 cd usscs_enc
 python3 setup.py install
+cd ..
+cd ..
 rm -rf USSCS

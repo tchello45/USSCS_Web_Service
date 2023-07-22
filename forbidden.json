@@ -1,0 +1,21 @@
+{
+    "usernames": [
+        "sys_default",
+        "tchello45",
+        "admin",
+        "root",
+        "tilman",
+        "kurmayer",
+        "support"
+    ],
+    "clients": [
+        "sys_default",
+        "sys_default_enc",
+        "EDC",
+        "_default_"
+    ],
+    "non_active_clients": [
+        "sys_default",
+        "sys_default_enc"
+    ]
+}   
