@@ -76,7 +76,18 @@ def get_enc(id_):
         enc = c.fetchone()[5]
         conn.close()
         return enc
-
+def get_client(id_):
+    conn = sqlite3.connect(path + "APIs.db")
+    c = conn.cursor()
+    c.execute('''SELECT * FROM APIs WHERE id=?''', (id_,))
+    if c.fetchone() is None:
+        conn.close()
+        return False
+    else:
+        c.execute('''SELECT * FROM APIs WHERE id=?''', (id_,))
+        client = c.fetchone()[1]
+        conn.close()
+        return client
 def get_all_clients():
     conn = sqlite3.connect(path + "APIs.db")
     c = conn.cursor()

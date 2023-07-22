@@ -35,9 +35,11 @@ _2xx = {
     206: "get_contacts",
     207: "set_privacy",
     208: "get_privacy",
-    209: "other"
+    209: "other",
+    210: "token check",
+    211: "password check",
 }
-flags = ["send_message", "get_mesages", "login", "register", "add_contact", "remove_contact", "get_contacts", "set_privacy", "get_privacy", "other"]
+flags = ["send_message", "get_mesages", "login", "register", "add_contact", "remove_contact", "get_contacts", "set_privacy", "get_privacy", "check", "other"]
 
 def gen_err_id(code:int, flag:str, username:str, API_server:str):
     now = datetime.datetime.now()

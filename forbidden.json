@@ -6,13 +6,15 @@
         "root",
         "tilman",
         "kurmayer",
-        "support"
+        "support",
+        "Unknown"
     ],
     "clients": [
         "sys_default",
         "sys_default_enc",
         "EDC",
-        "_default_"
+        "_default_",
+        "Unknown"
     ],
     "non_active_clients": [
         "sys_default",
