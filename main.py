@@ -50,10 +50,10 @@ socketio = SocketIO(app)
 
 @socketio.on("connect")
 def connect():
-    print("Connected")
+    print("Connected", request.sid)
 @socketio.on("disconnect")
 def disconnect():
-    print("Disconnected")
+    print("Disconnected", request.sid)
 
 @socketio.on("login")
 def login(data):
@@ -99,8 +99,15 @@ def register(data):
         emit("status", error.gen_status_message(False, 403, flag, username, API_server, "Wrong registration password"))
         return False
     if enc:
-        pub = data["public_key"]
-        priv = data["private_key"]
+        pub = rsa.PublicKey.load_pkcs1(data["public_key"])
+        priv = rsa.PrivateKey.load_pkcs1(data["private_key"])
+        try:
+            enc_db_api.add_user(username, password, pub, priv, path=f"DATABASE/APIs/{API_id}/")
+            emit("status", error.gen_status_message(True, 201, flag, username, API_server, "User registered"))
+            return True
+        except ValueError as e:
+            emit("status", error.gen_status_message(False, 420, flag, username, API_server, "Username already exists"))
+            return False
     else:
         try:
             db_api.add_user(username, password, path=f"DATABASE/APIs/{API_id}/")
@@ -163,7 +170,7 @@ def send_message(data_):
         return False
     if enc:
         try:
-           user =  enc_db_api.user(username, password, path=f"DATABASE/APIs/{API_id}/")
+           user = enc_db_api.user(username, password, path=f"DATABASE/APIs/{API_id}/")
         except ValueError as e:
             emit("status", error.gen_status_message(False, 400, flag, username, APIs.get_client(API_id), "Authentication failed at send message"))
             return False
@@ -178,6 +185,45 @@ def send_message(data_):
     try:
         user.send_message(target, message)
         emit("status", error.gen_status_message(True, 202, flag, username, APIs.get_client(API_id), "Message sent"))
+        return True
+    except ValueError as e:
+        emit("status", error.gen_status_message(False, 410, flag, username, APIs.get_client(API_id), "Target not found"))
+        return False
+
+@socketio.on("get_messages")
+def get_messages(data_):
+    token = data_["token"]
+    flag = 1
+    try:
+        data = tokens.decode_token(token)
+    except Exception as e:
+        emit("status", error.gen_status_message(False, 401, flag, "Unknown", "Unknown", "Token decode failed"))
+        return False
+    API_id = data["API_id"]
+    username = data["username"]
+    password = data["password"]
+    login_password = data["login_password"]
+    enc = data["enc"]
+    if hashlib.sha256(login_password.encode()).hexdigest() != APIs.get_login_hash(API_id):
+        emit("status", error.gen_status_message(False, 402, flag, username, APIs.get_client(API_id), "Wrong login password at get messages"))
+        return False
+    if enc:
+        try:
+           user = enc_db_api.user(username, password, path=f"DATABASE/APIs/{API_id}/")
+        except ValueError as e:
+            emit("status", error.gen_status_message(False, 400, flag, username, APIs.get_client(API_id), "Authentication failed at get messages"))
+            return False
+    else:
+        try:
+            user = db_api.user(username, password, path=f"DATABASE/APIs/{API_id}/")
+        except ValueError as e:
+            emit("status", error.gen_status_message(False, 400, flag, username, APIs.get_client(API_id), "Authentication failed at get messages"))
+            return False
+    target = data_["target"]
+    try:
+        messages = user.get_conversation(target)
+        emit("status", error.gen_status_message(True, 203, flag, username, APIs.get_client(API_id), "Messages retrieved"))
+        emit("messages", messages)
         return True
     except ValueError as e:
         emit("status", error.gen_status_message(False, 410, flag, username, APIs.get_client(API_id), "Target not found"))
@@ -209,6 +255,14 @@ def login_register_password_check(data):
         return False
     emit("status", error.gen_status_message(True, 211, flag, "Unknown", "Unknown", "Password check passed"))
     return True
+
+
+
+#INFO
+@socketio.on("get_error_dict")
+def get_error_dict():
+    emit("error_dict", error.gen_error_dict())
+
 if __name__ == '__main__':
     os.system("clear")
     print("__________SERVER__________")

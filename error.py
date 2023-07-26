@@ -1,4 +1,5 @@
 import datetime
+import json
 error_groups = {
     "4xx": {
         "4xx": "Client Error",
@@ -39,7 +40,7 @@ _2xx = {
     210: "token check",
     211: "password check",
 }
-flags = ["send_message", "get_mesages", "login", "register", "add_contact", "remove_contact", "get_contacts", "set_privacy", "get_privacy", "check", "other"]
+flags = ["send_message", "get_messages", "login", "register", "add_contact", "remove_contact", "get_contacts", "set_privacy", "get_privacy", "check", "other"]
 
 def gen_err_id(code:int, flag:str, username:str, API_server:str):
     now = datetime.datetime.now()
@@ -57,3 +58,11 @@ def gen_status_message(succes:bool, code:int, flag:int, username:str, API_server
         "err_id": gen_err_id(code, flag, username, API_server)
     }
     return status
+def gen_error_dict():
+    error_dict = {
+        "error_groups": error_groups,
+        "4xx": _4xx,
+        "2xx": _2xx,
+        "flags": flags
+    }
+    return json.dumps(error_dict, indent=4)
