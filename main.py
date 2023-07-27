@@ -20,7 +20,7 @@ from jwt import (
 eventlet.monkey_patch()
 if not os.path.isfile("public_key.pem") and not os.path.isfile("private_key.pem"):
     print("Generating keys...")
-    (public_key, private_key) = rsa.newkeys(512)
+    (public_key, private_key) = rsa.newkeys(4096)
     print("Keys generated.")   
     with open("public_key.pem", "wb") as f:
         f.write(public_key.save_pkcs1())
