@@ -2,8 +2,6 @@ from usscs import db_api
 from usscs_enc import enc_db_api
 from flask import Flask, request, jsonify, render_template, redirect, url_for, session
 from flask_socketio import SocketIO, send, emit, join_room, leave_room
-import APIs_USSCS
-import json
 import APIs
 import rsa
 import os
@@ -11,13 +9,12 @@ import hashlib
 import error
 import eventlet
 import threading
-from jwt import (
-    JWT,
-    jwk_from_pem,
-)
-
-
+import time
+from jwt import JWT, jwk_from_pem
 eventlet.monkey_patch()
+__version__ = "1.0.0 beta"
+__author__ = "Tilman Kurmayer"
+
 if not os.path.isfile("public_key.pem") and not os.path.isfile("private_key.pem"):
     print("Generating keys...")
     (public_key, private_key) = rsa.newkeys(4096)
@@ -42,11 +39,34 @@ class tokens:
     @staticmethod
     def decode_token(token:str):
         return JWT().decode(token, jwk_from_pem(public_key.save_pkcs1()))
-    
-
 app = Flask(__name__)
 app.secret_key = "secret_key"
 socketio = SocketIO(app)
+
+def background_messages(token, target, sid):
+    flag = 1
+    data = tokens.decode_token(token)
+    API_id = data["API_id"]
+    username = data["username"]
+    password = data["password"]
+    enc = data["enc"]
+    if enc:
+        user = enc_db_api.user(username, password, path=f"DATABASE/APIs/{API_id}/")
+    else:
+        user = db_api.user(username, password, path=f"DATABASE/APIs/{API_id}/")
+
+    for i in range(100):
+        try:
+            messages = user.get_unread_messages(target)
+            if messages == []:
+                time.sleep(1)
+                continue
+            socketio.emit("status", error.gen_status_message(True, 203, flag, username, APIs.get_client(API_id), "Messages retrieved"), room=sid)
+            socketio.emit("messages_background", messages)
+            return True
+        except ValueError as e:
+            socketio.emit("status", error.gen_status_message(False, 410, flag, username, APIs.get_client(API_id), "Target not found"), room=sid)
+            return False
 
 @socketio.on("connect")
 def connect():
@@ -54,7 +74,6 @@ def connect():
 @socketio.on("disconnect")
 def disconnect():
     print("Disconnected", request.sid)
-
 @socketio.on("login")
 def login(data):
     flag = 2
@@ -85,7 +104,6 @@ def login(data):
         except ValueError as e:
             emit("status", error.gen_status_message(False, 400, flag, username, API_server, "Authentication failed"))
             return False
-    
 @socketio.on("register")
 def register(data):
     flag = 3
@@ -116,7 +134,6 @@ def register(data):
         except ValueError as e:
             emit("status", error.gen_status_message(False, 420, flag, username, API_server, "Username already exists"))
             return False
-
 @socketio.on("token_check")
 def token_check(data):
     flag = 9
@@ -149,8 +166,7 @@ def token_check(data):
             return True
         except ValueError as e:
             emit("status", error.gen_status_message(False, 400, flag, username, APIs.get_client(API_id), "Authentication failed at token check"))
-            return False
-    
+            return False   
 @socketio.on("send_message")
 def send_message(data_):
     token = data_["token"]
@@ -189,7 +205,6 @@ def send_message(data_):
     except ValueError as e:
         emit("status", error.gen_status_message(False, 410, flag, username, APIs.get_client(API_id), "Target not found"))
         return False
-
 @socketio.on("get_messages")
 def get_messages(data_):
     token = data_["token"]
@@ -228,7 +243,6 @@ def get_messages(data_):
     except ValueError as e:
         emit("status", error.gen_status_message(False, 410, flag, username, APIs.get_client(API_id), "Target not found"))
         return False
-
 @socketio.on("get_enc_API_server")
 def get_enc_API_Server(data):
     API_server = data["API_server"]
@@ -239,7 +253,6 @@ def get_enc_API_Server(data):
         return False
     enc = bool(APIs.get_enc(API_id))
     emit("enc", enc)
-
 @socketio.on("login_register_password_check")
 def login_register_password_check(data):
     flag = 9
@@ -255,8 +268,37 @@ def login_register_password_check(data):
         return False
     emit("status", error.gen_status_message(True, 211, flag, "Unknown", "Unknown", "Password check passed"))
     return True
-
-
+@socketio.on("get_messages_background")
+def get_messages_background(data_):
+    flag = 1
+    token = data_["token"]
+    try:
+        data = tokens.decode_token(token)
+    except Exception as e:
+        emit("status", error.gen_status_message(False, 401, flag, "Unknown", "Unknown", "Token decode failed"))
+        return False
+    API_id = data["API_id"]
+    username = data["username"]
+    password = data["password"]
+    login_password = data["login_password"]
+    enc = data["enc"]
+    if hashlib.sha256(login_password.encode()).hexdigest() != APIs.get_login_hash(API_id):
+        emit("status", error.gen_status_message(False, 402, flag, username, APIs.get_client(API_id), "Wrong login password at get messages background"))
+        return False
+    if enc:
+        try:
+           user = enc_db_api.user(username, password, path=f"DATABASE/APIs/{API_id}/")
+        except ValueError as e:
+            emit("status", error.gen_status_message(False, 400, flag, username, APIs.get_client(API_id), "Authentication failed at get messages background"))
+            return False
+    else:
+        try:
+            user = db_api.user(username, password, path=f"DATABASE/APIs/{API_id}/")
+        except ValueError as e:
+            emit("status", error.gen_status_message(False, 400, flag, username, APIs.get_client(API_id), "Authentication failed at get messages background"))
+            return False
+    target = data_["target"]
+    threading.Thread(target=background_messages, args=(token, target, request.sid)).start()
 
 #INFO
 @socketio.on("get_error_dict")
