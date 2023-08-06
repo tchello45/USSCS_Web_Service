@@ -8,16 +8,54 @@ if not os.path.exists(path):
 def create_main_db():
     conn = sqlite3.connect(path + "APIs.db")
     c = conn.cursor()
-    c.execute('''CREATE TABLE IF NOT EXISTS APIs ( id INTEGER PRIMARY KEY AUTOINCREMENT, client TEXT, users INTEGER, registration_hash TEXT, login_hash TEXT, enc BOOLEAN DEFAULT FALSE)''')
+    c.execute('''CREATE TABLE IF NOT EXISTS APIs ( id INTEGER PRIMARY KEY AUTOINCREMENT, client TEXT, users INTEGER, registration_hash TEXT, login_hash TEXT, enc BOOLEAN DEFAULT FALSE, max_users INTEGER, level INTEGER)''')
     conn.commit()
     conn.close()
 
-def add_client(client:str, regsistration_password:str, login_password:str, enc=False):
+def get_level(id_):
+    conn = sqlite3.connect(path + "APIs.db")
+    c = conn.cursor()
+    c.execute('''SELECT * FROM APIs WHERE id=?''', (id_,))
+    if c.fetchone() is None:
+        conn.close()
+        return False
+    else:
+        c.execute('''SELECT * FROM APIs WHERE id=?''', (id_,))
+        level = c.fetchone()[7]
+        conn.close()
+        return level
+def get_max_users(id_):
+    conn = sqlite3.connect(path + "APIs.db")
+    c = conn.cursor()
+    c.execute('''SELECT * FROM APIs WHERE id=?''', (id_,))
+    if c.fetchone() is None:
+        conn.close()
+        return False
+    else:
+        c.execute('''SELECT * FROM APIs WHERE id=?''', (id_,))
+        max_users = c.fetchone()[6]
+        conn.close()
+        return max_users
+def set_max_users(id_, max_users:int):
+    conn = sqlite3.connect(path + "APIs.db")
+    c = conn.cursor()
+    c.execute('''UPDATE APIs SET max_users=? WHERE id=?''', (max_users, id_))
+    conn.commit()
+    conn.close()
+    return True
+def set_level(id_, level:int):
+    conn = sqlite3.connect(path + "APIs.db")
+    c = conn.cursor()
+    c.execute('''UPDATE APIs SET level=? WHERE id=?''', (level, id_))
+    conn.commit()
+    conn.close()
+    return True
+def add_client(client:str, regsistration_password:str, login_password:str, enc=False, max_users=100, level=0):
     conn = sqlite3.connect(path + "APIs.db")
     c = conn.cursor()
     c.execute('''SELECT * FROM APIs WHERE client=?''', (client,))
     if c.fetchone() is None:
-        c.execute('''INSERT INTO APIs (client, users, registration_hash, login_hash, enc) VALUES (?, ?, ?, ?, ?)''', (client, 0, hashlib.sha256(regsistration_password.encode()).hexdigest(), hashlib.sha256(login_password.encode()).hexdigest(), enc))
+        c.execute('''INSERT INTO APIs (client, users, registration_hash, login_hash, enc, max_users, level) VALUES (?, ?, ?, ?, ?, ?, ?)''', (client, 0, hashlib.sha256(regsistration_password.encode()).hexdigest(), hashlib.sha256(login_password.encode()).hexdigest(), enc, max_users, level))
         conn.commit()
         c.execute('''SELECT * FROM APIs WHERE client=?''', (client,))
         id_ = c.fetchone()[0]

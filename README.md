@@ -1,5 +1,5 @@
 # Universal Serverside Chat System Web Service (USSCS_WS) Version 1.0.0 beta    
-# USSCS Version 3.0.1
+# USSCS Version 3.0.3
 Developed by: Tilman Kurmayer
 
 ## Description
@@ -15,4 +15,4 @@ Later USSCS_WS should provide a Docker Container for easy deployment.
 
 # In combination with:
 `encpp` - encryption library for Python [encpp](https://github.com/tchello45/encpp) 
-`USSCS` - Universal Serverside Chat System Version: 3.0.1 [USSCS](https://github.com/tchello45/USSCS/tree/Version-3.0.1)
+`USSCS` - Universal Serverside Chat System Version: 3.0.3 [USSCS](https://github.com/tchello45/USSCS/tree/Version-3.0.1)

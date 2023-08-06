@@ -23,7 +23,8 @@ _4xx = {
     411: "privacy error",
     420: "username already exists",
     421: "forbidden username",
-    423: "rsa_key failed"
+    423: "rsa_key failed",
+    424: "config check failed",
 }
 
 _2xx = {
@@ -39,6 +40,7 @@ _2xx = {
     209: "other",
     210: "token check",
     211: "password check",
+    212: "config check"
 }
 flags = ["send_message", "get_messages", "login", "register", "add_contact", "remove_contact", "get_contacts", "set_privacy", "get_privacy", "check", "other"]
 

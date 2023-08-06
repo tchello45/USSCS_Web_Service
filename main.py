@@ -101,7 +101,7 @@ def login(data):
             emit("status", error.gen_status_message(True, 200, flag, username, API_server, "User logged in"))
             emit("token", tokens.generate_token(username, password, API_id, login_password, enc))
             return True
-        except ValueError as e:
+        except Exception as e:
             emit("status", error.gen_status_message(False, 400, flag, username, API_server, "Authentication failed"))
             return False
 @socketio.on("register")
@@ -113,6 +113,7 @@ def register(data):
     register_password = data["register_password"]
     API_id = APIs.get_id(API_server)
     enc = APIs.get_enc(API_id)
+    max_users = APIs.get_max_users(API_id)
     if hashlib.sha256(register_password.encode()).hexdigest() != APIs.get_registration_hash(API_id):
         emit("status", error.gen_status_message(False, 403, flag, username, API_server, "Wrong registration password"))
         return False
@@ -120,18 +121,18 @@ def register(data):
         pub = rsa.PublicKey.load_pkcs1(data["public_key"])
         priv = rsa.PrivateKey.load_pkcs1(data["private_key"])
         try:
-            enc_db_api.add_user(username, password, pub, priv, path=f"DATABASE/APIs/{API_id}/")
+            enc_db_api.add_user(username, password, pub, priv, path=f"DATABASE/APIs/{API_id}/", max=max_users)
             emit("status", error.gen_status_message(True, 201, flag, username, API_server, "User registered"))
             return True
-        except ValueError as e:
+        except:
             emit("status", error.gen_status_message(False, 420, flag, username, API_server, "Username already exists"))
             return False
     else:
         try:
-            db_api.add_user(username, password, path=f"DATABASE/APIs/{API_id}/")
+            db_api.add_user(username, password, path=f"DATABASE/APIs/{API_id}/", max=max_users)
             emit("status", error.gen_status_message(True, 201, flag, username, API_server, "User registered"))
             return True 
-        except ValueError as e:
+        except:
             emit("status", error.gen_status_message(False, 420, flag, username, API_server, "Username already exists"))
             return False
 @socketio.on("token_check")
@@ -299,6 +300,31 @@ def get_messages_background(data_):
             return False
     target = data_["target"]
     threading.Thread(target=background_messages, args=(token, target, request.sid)).start()
+@socketio.on("config_check")
+def config_check(data_):
+    flag = 9
+    token = data_["token"]
+    register_password = data_["register_password"]
+    login_password = data_["login_password"]
+    API_server = data_["API_server"]
+    try:
+        API_id = APIs.get_id(API_server)
+        if hashlib.sha256(login_password.encode()).hexdigest() != APIs.get_login_hash(API_id) or hashlib.sha256(register_password.encode()).hexdigest() != APIs.get_registration_hash(API_id):
+            emit("status", error.gen_status_message(False, 424, flag, "Unknown", APIs.get_client(API_id), "Login or register password wrong at config check"))
+            return False
+        data = tokens.decode_token(token)
+        if data["API_id"] != API_id:
+            emit("status", error.gen_status_message(False, 424, flag, "Unknown", APIs.get_client(API_id), "API Server wrong at config check"))
+            return False
+        if data["enc"]:
+            enc_db_api.user(data["username"], data["password"], path=f"DATABASE/APIs/{API_id}/")
+        else:
+            db_api.user(data["username"], data["password"], path=f"DATABASE/APIs/{API_id}/")
+        emit("status", error.gen_status_message(True, 212, flag, data["username"], APIs.get_client(API_id), "Config check passed"))
+        return True
+    except Exception as e:
+        emit("status", error.gen_status_message(False, 424, flag, "Unknown", "Unknown", "Config check failed"))
+        return False
 
 #INFO
 @socketio.on("get_error_dict")

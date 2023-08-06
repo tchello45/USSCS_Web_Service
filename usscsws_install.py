@@ -8,10 +8,10 @@ def APIs_install():
     os.mkdir("DATABASE/APIs")
 def usscs_install():
     import APIs_USSCS
-    APIs_USSCS.add_client("sys_default", "sys_default", "sys_default")
+    print(APIs_USSCS.add_client("sys_default", "sys_default", "sys_default", server=True))
 def usscs_enc_install():
     import APIs_USSCS
-    APIs_USSCS.add_client("sys_default_enc", "sys_default", "sys_default", enc=True)
+    print(APIs_USSCS.add_client("sys_default_enc", "sys_default", "sys_default", enc=True, server=True))
 APIs_install()
 usscs_install()
 usscs_enc_install()
